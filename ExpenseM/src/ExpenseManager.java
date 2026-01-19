@@ -3,6 +3,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -78,7 +79,7 @@ public class ExpenseManager implements ExpenseOperations{
     public void addExpense() throws IOException, InvalidInputException {
         Scanner sc = new Scanner(System.in);
 
-        LocalDateTime date;
+        LocalDateTime date = null;
         //input amount
         System.out.println("Input Amount - ");
         double amt = sc.nextDouble();
@@ -87,18 +88,23 @@ public class ExpenseManager implements ExpenseOperations{
         }
 
         //input category
-        System.out.println("Input Category (FOOD, BILLS, TRAVEL, MISC) - ");
-        String cat = sc.next().toUpperCase().trim();
-        if(cat.isBlank()) {
-            throw new InvalidInputException("Category cannot be empty!");
+        System.out.println("Input Category\n 1. FOOD\n 2. BILLS\n 3. TRAVEL\n 4. MISC");
+        int cat = sc.nextInt();
+        if(cat<1 && cat >4) {
+            throw new InvalidInputException("Invalid Input!");
         }
 
         System.out.println("1. Enter Date Manually\n 2. Take Current Date Time");
         int ch1 = sc.nextInt();
         if (ch1 == 1) {
-            System.out.println("Enter date (yyyy-mm-dd) - ");
-            LocalDate inputDate = LocalDate.parse(sc.next().trim());
-            date = inputDate.atStartOfDay();
+            try {
+                System.out.println("Enter date (yyyy-mm-dd) - ");
+                LocalDate inputDate = LocalDate.parse(sc.next().trim());
+                date = inputDate.atStartOfDay();
+            } catch (DateTimeParseException e) {
+                System.out.println("Invalid Date format! ");
+            }
+
         } else {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HHmmss");
 
@@ -108,34 +114,37 @@ public class ExpenseManager implements ExpenseOperations{
             );
         }
 
-        //exp id
-        String expId = getId();
+        if (date != null) {
+            String expId = getId();
 
-        Expense e = null;
+            Expense e = null;
 
-        if (cat.equals("FOOD")) {
-            e = new FoodExpense(expId, cat, amt, date);
+            if (cat == 1) {
+                e = new FoodExpense(expId, "FOOD", amt, date);
 
-        } else if (cat.equals("TRAVEL")) {
-            e = new TravelExpense(expId, cat, amt, date);
+            } else if (cat == 2) {
+                e = new TravelExpense(expId, "TRAVEL", amt, date);
 
-        } else if (cat.equals("BILLS")) {
-            e = new BillExpense(expId, cat, amt, date);
+            } else if (cat == 3) {
+                e = new BillExpense(expId, "BILLS", amt, date);
 
-        } else if (cat.equals("MISC")) {
-            e = new MiscExpense(expId, cat, amt, date);
-        } else {
-            System.out.println("Invalid Category!");
+            } else if (cat == 4) {
+                e = new MiscExpense(expId, "MISC", amt, date);
+            } else {
+                System.out.println("Invalid Category!");
+            }
+
+            assert e != null;
+            String toCsv = expId + ", " + e.getCategory() + ", " + amt + ", " + date;
+            //write it in file
+            try(BufferedWriter bw = new BufferedWriter(new FileWriter(userFile, true))) {
+                bw.write(toCsv);
+                bw.newLine();
+            }
+
+            System.out.println("Added : " + toCsv);
         }
 
-        String toCsv = expId + ", " + e.getCategory() + ", " + amt + ", " + date;
-        //write it in file
-        try(BufferedWriter bw = new BufferedWriter(new FileWriter(userFile, true))) {
-            bw.write(toCsv);
-            bw.newLine();
-        }
-
-        System.out.println("Added : " + toCsv);
     }
 
     @Override
@@ -203,11 +212,23 @@ public class ExpenseManager implements ExpenseOperations{
 
 
         } else if (ch == 2) {
-            System.out.println("Enter updated category - ");
-            String cat = sc.next().trim();
-            if(cat.isBlank()) {
-                throw new InvalidInputException("Category cannot be empty!");
+            System.out.println("Input Updated Category\n 1. FOOD\n 2. BILLS\n 3. TRAVEL\n 4. MISC");
+            int cat = sc.nextInt();
+            if(cat<1 && cat >4) {
+                throw new InvalidInputException("Invalid Input!");
             }
+
+            String category = "";
+            if(cat == 1) {
+                category = "FOOD";
+            } else if(cat == 2) {
+                category = "BILLS";
+            } else if (cat == 3) {
+                category = "TRAVEL";
+            } else if (cat == 4) {
+                category = "MISC";
+            }
+
             List<String[]> rows = new ArrayList<>();
 
             // read the file and go to the line where the exp id
@@ -226,7 +247,7 @@ public class ExpenseManager implements ExpenseOperations{
                     String[] parts = line.trim().split(", ");
                     String id = parts[0];
                     if (id.equals(expId)) {
-                        parts[3] = cat;
+                        parts[1] = category;
                         found = true;
                     }
 
@@ -300,31 +321,41 @@ public class ExpenseManager implements ExpenseOperations{
         System.out.println("1. View at a certain date\n 2. View between two dates");
         int ch = sc.nextInt();
         if(ch==1) {
-            System.out.println("Enter date (YYYY-mm-dd) - ");
-            LocalDate date = LocalDate.parse(sc.next().trim());
-            List<Expense> filtered = list.stream()
-                    .filter(e->e.getDateTime().toLocalDate().equals(date))
-                    .toList();
+            try{
+                System.out.println("Enter date (YYYY-mm-dd) - ");
+                LocalDate date = LocalDate.parse(sc.next().trim());
+                List<Expense> filtered = list.stream()
+                        .filter(e->e.getDateTime().toLocalDate().equals(date))
+                        .toList();
 
-            if(filtered.isEmpty()) System.out.println("No Expenses!");
-            else {
-                System.out.println(filtered);
+                if(filtered.isEmpty()) System.out.println("No Expenses!");
+                else {
+                    System.out.println(filtered);
+                }
+            } catch (DateTimeParseException e) {
+                System.out.println("Invalid date format");
             }
+
 
         } else if (ch==2) {
-            System.out.println("Enter start date (YYYY-mm-dd) - ");
-            LocalDate date1 = LocalDate.parse(sc.next().trim());
-            System.out.println("Enter end date (YYYY-mm-dd) - ");
-            LocalDate date2 = LocalDate.parse(sc.next().trim());
+            try {
+                System.out.println("Enter start date (YYYY-mm-dd) - ");
+                LocalDate date1 = LocalDate.parse(sc.next().trim());
+                System.out.println("Enter end date (YYYY-mm-dd) - ");
+                LocalDate date2 = LocalDate.parse(sc.next().trim());
 
-            List<Expense> filtered = list.stream()
-                    .filter(e->(!e.getDateTime().toLocalDate().isBefore(date1)) && (!e.getDateTime().toLocalDate().isAfter(date2)))
-                    .toList();
+                List<Expense> filtered = list.stream()
+                        .filter(e->(!e.getDateTime().toLocalDate().isBefore(date1)) && (!e.getDateTime().toLocalDate().isAfter(date2)))
+                        .toList();
 
-            if(filtered.isEmpty()) System.out.println("No Expenses!");
-            else {
-                System.out.println(filtered);
+                if(filtered.isEmpty()) System.out.println("No Expenses!");
+                else {
+                    System.out.println(filtered);
+                }
+            } catch (DateTimeParseException e) {
+                System.out.println("Invalid date format");
             }
+
 
         } else {
             System.out.println("Invalid input!");

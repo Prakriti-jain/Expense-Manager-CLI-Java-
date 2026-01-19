@@ -1,5 +1,8 @@
 import javax.security.sasl.AuthenticationException;
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;
@@ -31,11 +34,13 @@ public class UserOperations {
         }
 
         //create a file for the specific user
-//        File ff = new File(userFile);
-//        try(BufferedWriter bw = new BufferedWriter(new FileWriter(ff, true))) {
-//            bw. write("Expense_ID, Date Time, Amount, Category");
-//            bw.newLine();
-//        }
+        File ff = new File(userFile);
+        try(BufferedWriter bw = new BufferedWriter(new FileWriter(ff, true))) {
+
+        }
+
+        //create a file
+
 
         System.out.println("Successfully Registered!");
     }
