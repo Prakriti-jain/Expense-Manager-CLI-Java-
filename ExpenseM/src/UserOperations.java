@@ -16,33 +16,35 @@ public class UserOperations {
 
     public void register(String username, String password) throws IOException, UserAuthenticationException {
         //first check if username and password are valid
-        check(username, password);
+        if (check(username, password)) {
+            //check is user already exists or not
+            if (userExists(username, password)){
+                throw new UserAuthenticationException("User Already Exists!");
+            }
 
-        //check is user already exists or not
-        if (userExists(username, password)){
-            throw new UserAuthenticationException("User Already Exists!");
-        }
+            String dateId = LocalTime.now().format(DateTimeFormatter.ofPattern("HHmmssSS"));
+            String userFile = username+dateId;
 
-        String dateId = LocalTime.now().format(DateTimeFormatter.ofPattern("HHmmssSS"));
-        String userFile = username+dateId;
+            //write it in the csv
+            File f = new File(file_username);
+            try(BufferedWriter bw = new BufferedWriter(new FileWriter(f, true))) {
+                bw.write(username + ", " + password + ", " + userFile);
+                bw.newLine();
+            }
 
-        //write it in the csv
-        File f = new File(file_username);
-        try(BufferedWriter bw = new BufferedWriter(new FileWriter(f, true))) {
-            bw.write(username + ", " + password + ", " + userFile);
-            bw.newLine();
-        }
+            //create a file for the specific user
+            File ff = new File(userFile);
+            try(BufferedWriter bw = new BufferedWriter(new FileWriter(ff, true))) {
 
-        //create a file for the specific user
-        File ff = new File(userFile);
-        try(BufferedWriter bw = new BufferedWriter(new FileWriter(ff, true))) {
+            }
 
-        }
-
-        //create a file
+            //create a file
 
 
-        System.out.println("Successfully Registered!");
+            System.out.println("Successfully Registered!");
+        } else System.out.println("Invalid password!");
+
+
     }
 
     public boolean login(String username, String password) throws IOException {
@@ -55,7 +57,31 @@ public class UserOperations {
         }
     }
 
-    public void check(String username, String password){
+    public boolean check(String username, String password) {
+        if (password.length() < 8) {
+            System.out.println("Password should be atleast 8 characters long!");
+            return false;
+        }
+        boolean hasSpecial = false;
+        boolean hasDigit = false;
+        boolean hasLowercase = false;
+        boolean hasUppercase = false;
+        for(int i=0 ; i<password.length() ; i++) {
+            char ch = password.charAt(i);
+            if (Character.isDigit(ch)) {
+                hasDigit = true;
+            } else if (Character.isLetter(ch)) {
+                if(Character.isLowerCase(ch)) hasLowercase = true;
+                else hasUppercase = true;
+            } else {
+                hasSpecial = true;
+            }
+        }
+
+        if(hasSpecial && hasDigit && hasLowercase && hasUppercase) {
+            return true;
+        }
+        return false;
     }
 
     public boolean userExists(String username, String password) throws IOException {

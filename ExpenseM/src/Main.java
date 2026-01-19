@@ -72,7 +72,7 @@ public class Main {
                     } else if (val == 2) {
                         System.out.println("Enter your username - ");
                         String username = sc.next().trim();
-                        System.out.println("Enter your password - ");
+                        System.out.println("Enter your password (8 characters long, should have atleast one digit, lowercase, uppercase, special character - ");
                         String pass = sc.next().trim();
 
                         //store in the json these credentials
