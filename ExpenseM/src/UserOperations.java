@@ -1,3 +1,4 @@
+import javax.security.sasl.AuthenticationException;
 import java.io.*;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -10,13 +11,13 @@ public class UserOperations {
 
     }
 
-    public void register(String username, String password) throws IOException {
+    public void register(String username, String password) throws IOException, UserAuthenticationException {
         //first check if username and password are valid
         check(username, password);
 
         //check is user already exists or not
         if (userExists(username, password)){
-            System.out.println("User already exists!");
+            throw new UserAuthenticationException("User Already Exists!");
         }
 
         String dateId = LocalTime.now().format(DateTimeFormatter.ofPattern("HHmmssSS"));
@@ -32,18 +33,20 @@ public class UserOperations {
         //create a file for the specific user
 //        File ff = new File(userFile);
 //        try(BufferedWriter bw = new BufferedWriter(new FileWriter(ff, true))) {
-////            bw. write("Expense_ID, Date Time, Amount, Category");
+//            bw. write("Expense_ID, Date Time, Amount, Category");
 //            bw.newLine();
 //        }
 
         System.out.println("Successfully Registered!");
     }
 
-    public void login(String username, String password) throws IOException {
+    public boolean login(String username, String password) throws IOException {
         if(userExists(username, password)) {
             System.out.println("Successfully Login!");
+            return true;
         } else {
             System.out.println("No user Exists, register first");
+            return false;
         }
     }
 
@@ -60,6 +63,7 @@ public class UserOperations {
                 String[] parts = line.split(", ");
                 String name = parts[0].trim();
                 String pass = parts[1].trim();
+
                 if(parts.length > 0  && name.equals(username) && pass.equals(password)) {
                     return true;
                 }

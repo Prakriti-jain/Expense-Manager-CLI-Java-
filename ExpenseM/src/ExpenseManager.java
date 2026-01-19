@@ -75,26 +75,38 @@ public class ExpenseManager implements ExpenseOperations{
     }
 
     @Override
-    public void addExpense() throws IOException {
+    public void addExpense() throws IOException, InvalidInputException {
         Scanner sc = new Scanner(System.in);
 
-        //input date
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HHmmss");
-
-        LocalDateTime date = LocalDateTime.parse(
-                LocalDateTime.now().format(formatter),
-                formatter
-        );
-
+        LocalDateTime date;
         //input amount
         System.out.println("Input Amount - ");
         double amt = sc.nextDouble();
-        if(amt <= 0) System.out.println("Not valid");
+        if(amt <= 0) {
+            throw new InvalidInputException("Invalid amount!!");
+        }
 
         //input category
-        System.out.println("Input Category - ");
+        System.out.println("Input Category (FOOD, BILLS, TRAVEL, MISC) - ");
         String cat = sc.next().toUpperCase().trim();
-        if(cat.isBlank()) System.out.println("Not valid");
+        if(cat.isBlank()) {
+            throw new InvalidInputException("Category cannot be empty!");
+        }
+
+        System.out.println("1. Enter Date Manually\n 2. Take Current Date Time");
+        int ch1 = sc.nextInt();
+        if (ch1 == 1) {
+            System.out.println("Enter date (yyyy-mm-dd) - ");
+            LocalDate inputDate = LocalDate.parse(sc.next().trim());
+            date = inputDate.atStartOfDay();
+        } else {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HHmmss");
+
+            date = LocalDateTime.parse(
+                    LocalDateTime.now().format(formatter),
+                    formatter
+            );
+        }
 
         //exp id
         String expId = getId();
@@ -127,7 +139,7 @@ public class ExpenseManager implements ExpenseOperations{
     }
 
     @Override
-    public void updateExpense() throws IOException {
+    public void updateExpense() throws IOException, InvalidInputException, ExpenseNotFoundException {
         Scanner sc = new Scanner(System.in);
         List<Expense> list = readExp();
 
@@ -143,6 +155,10 @@ public class ExpenseManager implements ExpenseOperations{
         if (ch == 1) {
             System.out.println("Enter updated amount - ");
             double newAmt = sc.nextDouble();
+
+            if(newAmt <= 0) {
+                throw new InvalidInputException("Invalid amount!!");
+            }
             List<String[]> rows = new ArrayList<>();
 
             // read the file and go to the line where the exp id
@@ -168,7 +184,9 @@ public class ExpenseManager implements ExpenseOperations{
                     rows.add(parts);
                 }
 
-                if (!found) System.out.println("no such expense id exists!");
+                if (!found) {
+                    throw new ExpenseNotFoundException("No such Expense ID exists");
+                }
                 else {
                     // write back the updated csv
                     try(BufferedWriter bw = new BufferedWriter(new FileWriter(userFile))){
@@ -179,12 +197,17 @@ public class ExpenseManager implements ExpenseOperations{
                     }
                     System.out.println("Successfully updated the amount!");
                 }
+            } catch (ExpenseNotFoundException e) {
+                throw new ExpenseNotFoundException("Expense not found! " + e);
             }
 
 
         } else if (ch == 2) {
             System.out.println("Enter updated category - ");
             String cat = sc.next().trim();
+            if(cat.isBlank()) {
+                throw new InvalidInputException("Category cannot be empty!");
+            }
             List<String[]> rows = new ArrayList<>();
 
             // read the file and go to the line where the exp id
@@ -210,7 +233,7 @@ public class ExpenseManager implements ExpenseOperations{
                     rows.add(parts);
                 }
 
-                if (!found) System.out.println("no such expense id exists!");
+                if (!found) throw new ExpenseNotFoundException("No such Expense ID exists");
                 else {
                     // write back the updated csv
                     try(BufferedWriter bw = new BufferedWriter(new FileWriter(userFile))){
@@ -233,10 +256,12 @@ public class ExpenseManager implements ExpenseOperations{
     }
 
     @Override
-    public void viewByCategory() throws FileNotFoundException {
+    public void viewByCategory() throws FileNotFoundException, ExpenseNotFoundException {
         Scanner sc = new Scanner(System.in);
         List<Expense> list = readExp();
-        if (list.isEmpty()) System.out.println("no expenses!!");
+        if (list.isEmpty()) {
+            throw new ExpenseNotFoundException("No Expenses found");
+        }
         System.out.println();
 
         System.out.println("1. FOOD\n 2. BILLS\n 3. TRAVEL\n 4. MISC");
@@ -308,12 +333,14 @@ public class ExpenseManager implements ExpenseOperations{
     }
 
     @Override
-    public void export() throws IOException {
+    public void export() throws IOException, InvalidInputException {
         List<Expense> list = readExp();
         Scanner sc = new Scanner(System.in);
         System.out.println("Enter the name of the new file - ");
         String name = sc.next().trim();
-        if(name.isBlank()) System.out.println("Invalid name");
+        if(name.isBlank()) {
+            throw new InvalidInputException("File name cannot be empty!");
+        }
         else {
             try(BufferedWriter bw = new BufferedWriter(new FileWriter(name))){
                 for(Expense e : list) {
